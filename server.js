@@ -7,6 +7,8 @@ import authRoutes from './routes/authRoutes.js';
 import buyerRoutes from './routes/buyerRoutes.js';
 import sellerRoutes from './routes/sellerRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import requirementRoutes from './routes/requirement.js';
+
 
 dotenv.config();
 connectDB();
@@ -21,6 +23,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/buyer', buyerRoutes);
 app.use('/api/seller', sellerRoutes);
 app.use('/api/admin', adminRoutes);
-
+app.use('/api',requirementRoutes)
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
