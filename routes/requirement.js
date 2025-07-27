@@ -8,8 +8,8 @@ router.post('/requirement', async (req, res) => {
   try {
     const newReq = new Requirement(req.body);
     await newReq.save();
-    console.log(newReq)
-    console.log("done")
+    // console.log(newReq)
+    // console.log("done")
     res.status(201).json({ message: 'Requirement posted successfully' });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -18,8 +18,8 @@ router.post('/requirement', async (req, res) => {
 router.get('/requirement', async (req, res) => {
   try {
     const requirements = await Requirement.find().sort({ createdAt: -1 });
-    console.log("coming")
-    console.log(requirements)
+    // console.log("coming")
+    // console.log(requirements)
     res.json(requirements);
   } catch (err) {
     res.status(500).json({ error: err.message });
