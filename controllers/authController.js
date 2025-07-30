@@ -1,6 +1,7 @@
 import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
+import { NotificationService } from '../services/notificationService.js';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -36,6 +37,16 @@ export const completeOnboarding = async (req, res) => {
         user.phone = phone;
         user.address = address;
         const updatedUser = await user.save();
+        
+        // Send notification to admins about new user registration
+        if (role !== 'Admin') {
+          await NotificationService.newUserRegistration(
+            updatedUser._id,
+            updatedUser.name,
+            role
+          );
+        }
+        
         res.json({ user: updatedUser, token: generateToken(updatedUser._id) });
     } else {
         res.status(400).json({ message: 'User not found or already onboarded.' });

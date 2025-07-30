@@ -1,6 +1,7 @@
 import Product from '../models/Product.js';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
+import { NotificationService } from '../services/notificationService.js';
 
 export const browseProducts = async (req, res) => {
   const availableSellers = await User.find({ role: 'Seller', isAvailable: true }).select('_id');
@@ -10,28 +11,44 @@ export const browseProducts = async (req, res) => {
 };
 
 export const placeOrder = async (req, res) => {
-  const { cart, sellerId, deliveryAddress, totalPrice } = req.body;
+  const { cart, deliveryAddress, totalPrice } = req.body;
   if (!cart || cart.length === 0) return res.status(400).json({ message: 'No order items' });
   try {
+    // Check stock availability (but don't reduce stock yet - admin will assign to seller first)
     for (const item of cart) {
         const product = await Product.findById(item._id);
         if (!product || product.stock < item.quantity) {
             return res.status(400).json({ message: `Not enough stock for ${item.name}.` });
         }
     }
-    for (const item of cart) {
-        await Product.findByIdAndUpdate(item._id, { $inc: { stock: -item.quantity } });
-    }
+    
     const orderItems = cart.map(item => ({
         name: item.name, quantity: item.quantity, price: item.price, product: item._id,
     }));
+    
+    // Create order without seller - admin will assign seller later
     const order = new Order({
-      buyer: req.user._id, seller: sellerId, orderItems, deliveryAddress, totalPrice,
+      buyer: req.user._id, 
+      seller: null, // No seller initially - admin will assign
+      orderItems, 
+      deliveryAddress, 
+      totalPrice,
+      status: 'Pending Assignment', // New status for orders waiting for admin assignment
       deliveryDate: new Date(new Date().setDate(new Date().getDate() + 1)),
     });
     const createdOrder = await order.save();
+    
+    // Send notifications for order placement (no seller yet)
+    await NotificationService.orderPlaced(
+      createdOrder._id,
+      req.user._id,
+      orderItems,
+      totalPrice
+    );
+    
     res.status(201).json(createdOrder);
   } catch (error) {
+      console.error('Error in placeOrder:', error);
       res.status(500).json({ message: "Server error during order placement." });
   }
 };
